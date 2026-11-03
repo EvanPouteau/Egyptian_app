@@ -1,3 +1,32 @@
+import { SITE } from '@/lib/site-config';
+
+/**
+ * Les champs Open Graph d'une page (aperçu d'un lien partagé sur LinkedIn, Facebook,
+ * WhatsApp…). Next ne fusionne pas `openGraph` avec celui de la mise en page : une page
+ * qui en déclare un doit tout redonner, image comprise (mesuré : sans elle, les modules
+ * et les leçons partaient sans aperçu), d'où cette fonction commune. L'image est
+ * `app/opengraph-image.png`, que Next sert à cette adresse.
+ *
+ * Sans `path`, pas d'`og:url` : la mise en page l'aurait sinon transmis à toutes les pages
+ * qui ne redéfinissent rien, et un lien vers le glossaire se serait présenté comme
+ * l'accueil.
+ */
+export function openGraphFor(title: string, description: string, path?: string) {
+  return {
+    type: 'website' as const,
+    locale: 'fr_FR',
+    siteName: SITE.name,
+    ...(path ? { url: new URL(path, SITE.url).toString() } : {}),
+    title,
+    description,
+    images: [{ url: '/opengraph-image.png', width: 1200, height: 630, alt: OG_IMAGE_ALT }],
+  };
+}
+
+/** Le texte de `app/opengraph-image.alt.txt`, pour les pages qui redonnent l'image. */
+const OG_IMAGE_ALT =
+  "Arabe égyptien : « Parler l'arabe du Caire, pas celui des manuels. » Les quatre lettres de l'Arabizi : ع = 3, ح = 7, خ = 5, ق = 2.";
+
 /**
  * Meta description d'une leçon, tirée de son contenu.
  *

@@ -3,6 +3,9 @@ import SoundSampler from '@/components/SoundSampler';
 import WordMarquee from '@/components/WordMarquee';
 import TutorMascot from '@/components/TutorMascot';
 import { getContentCounts } from '@/lib/content';
+import JsonLd from '@/components/JsonLd';
+import { SITE } from '@/lib/site-config';
+import { websiteData } from '@/lib/structured-data';
 
 export const dynamic = 'force-dynamic';
 
@@ -54,6 +57,8 @@ export default async function LandingPage() {
     // cette coupe, il faisait défiler toute la page de 17 px à 375 px (mesuré). `clip` et non
     // `hidden` : pas de conteneur de défilement, donc rien ne casse les ancres (#sons).
     <main className="overflow-x-clip pb-6">
+      <JsonLd data={websiteData(SITE.description)} />
+
       {/* ---------------------------------------------------------------- Ouverture */}
       <section className="mx-auto grid max-w-6xl items-center gap-12 px-4 pb-14 pt-12 sm:px-8 md:grid-cols-[1.2fr_0.8fr] md:pt-16">
         <div>

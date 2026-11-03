@@ -2,7 +2,9 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
-import type { Answer } from '@/lib/quiz-scoring';
+import { getQuizBank } from '@/lib/content';
+import { grade } from '@/lib/grading';
+import { QUIZ_SIZE, type Answer } from '@/lib/quiz-scoring';
 import { refreshModuleStatus } from '../actions';
 
 /**
@@ -11,16 +13,23 @@ import { refreshModuleStatus } from '../actions';
  * L'XP est indexée sur la *progression du meilleur score*, pas sur le score de la tentative :
  * refaire un quiz déjà réussi ne rapporte rien, et il n'y a donc rien à farmer. Un module
  * repassé plus mal ne fait pas non plus perdre d'XP.
+ *
+ * Le score reçu est ignoré : il est recalculé sur la banque du module (lib/grading.ts).
  */
 export async function saveAttempt(
   moduleId: string,
-  result: { answers: Answer[]; score: number }
+  submitted: { answers: Pick<Answer, 'question_id' | 'given'>[] }
 ) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return;
+
+  // Seules les questions jouables (à choix) comptent, comme sur la page du quiz.
+  const bank = (await getQuizBank(moduleId)).filter((q) => q.options?.choices?.length);
+  const result = grade(submitted, bank, QUIZ_SIZE);
+  if (result.answers.length === 0) return;
 
   const { data: previous } = await supabase
     .from('user_progress')

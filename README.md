@@ -172,7 +172,12 @@ Après tout ajout de contenu, relancer ces commandes dans cet ordre.
 
 ```bash
 npm run dev
+npm test        # tests unitaires (vitest), à lancer avant chaque push
 ```
+
+Le site applique une politique de sécurité du contenu stricte (`lib/csp.ts`) : une
+ressource chargée depuis un autre domaine (police, script, API appelée par le navigateur)
+est bloquée tant qu'elle n'y est pas déclarée.
 
 Le contenu est mis en cache une heure côté serveur : un réimport peut mettre jusqu'à une
 heure à apparaître. Pour le voir tout de suite en production, redéployer.

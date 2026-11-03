@@ -14,6 +14,9 @@
 export const SITE = {
   name: 'Arabe égyptien',
   url: 'https://egyptian-arabic-app-phi.vercel.app',
+  /** Description du site : balise meta, aperçu de partage et données structurées. */
+  description:
+    "Apprendre l'arabe égyptien du Caire, module par module : alphabet, Arabizi, grammaire et conjugaison, de A1 à B2.",
 
   /** Nom ou pseudonyme de l'éditeur, affiché dans les mentions légales. À REMPLIR. */
   publisher: 'Evan POUTEAU',

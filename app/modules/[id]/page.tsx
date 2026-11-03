@@ -8,6 +8,10 @@ import { getAllProgress, getReadLessons } from '@/lib/progress';
 import { LEVEL_TONE } from '@/lib/level-tone';
 import { QUIZ_SIZE } from '@/lib/quiz-scoring';
 import { getModule, getModuleLessons, getQuizBank, type LessonLink } from '@/lib/content';
+import JsonLd from '@/components/JsonLd';
+import { openGraphFor } from '@/lib/meta';
+import { SITE } from '@/lib/site-config';
+import { courseData } from '@/lib/structured-data';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,7 +29,12 @@ export async function generateMetadata({
   const data = await getModule(id);
 
   if (!data) return { title: 'Module introuvable' };
-  return { title: data.title, description: data.description ?? undefined };
+  const description = data.description ?? undefined;
+  return {
+    title: data.title,
+    description,
+    openGraph: openGraphFor(data.title, description ?? SITE.description, `/modules/${id}`),
+  };
 }
 
 export default async function ModulePage({
@@ -64,6 +73,7 @@ export default async function ModulePage({
 
   return (
     <main className="mx-auto max-w-3xl px-4 pb-20 pt-8 sm:px-8">
+      <JsonLd data={courseData(mod)} />
       <Link
         href="/modules"
         // `inline-block` + `py-1` : le lien nu ne faisait que 18 px de haut, sous les

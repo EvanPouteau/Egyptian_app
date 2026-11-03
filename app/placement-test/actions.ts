@@ -2,6 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { getPlacementQuestions } from '@/lib/content';
+import { grade } from '@/lib/grading';
 import { assignLevel, type Answer } from '@/lib/quiz-scoring';
 
 /**
@@ -9,13 +11,20 @@ import { assignLevel, type Answer } from '@/lib/quiz-scoring';
  *
  * Le test reste jouable hors connexion (il est optionnel selon l'architecture) : sans
  * session, on affiche le résultat sans rien écrire.
+ *
+ * Le niveau et le score sont recalculés sur les questions du serveur (lib/grading.ts),
+ * jamais repris de ce qu'envoie le navigateur.
  */
-export async function savePlacement(result: { answers: Answer[]; score: number }) {
+export async function savePlacement(submitted: { answers: Pick<Answer, 'question_id' | 'given'>[] }) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return;
+
+  const questions = (await getPlacementQuestions()).filter((q) => q.options?.choices?.length);
+  const result = grade(submitted, questions, questions.length);
+  if (result.answers.length === 0) return;
 
   const level = assignLevel(result.answers);
 

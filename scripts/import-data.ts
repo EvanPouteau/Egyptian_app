@@ -1,6 +1,7 @@
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { createClient } from '@supabase/supabase-js';
+import { planLessons } from './plan-lessons';
 
 process.loadEnvFile('.env.local');
 
@@ -216,15 +217,7 @@ async function importPayload({ module, lessons }: ImportPayload) {
     .eq('module_id', module.id);
   fail('lecture des leçons en place', existingError);
 
-  const idByOrder = new Map(existing!.map((l) => [l.order_index, l.id as string]));
-  const wanted = new Set(lessons.map((l) => l.order_index));
-  // Retirées : les rangs absents du JSON, et les éventuels doublons d'un même rang (seul
-  // le dernier lu est gardé).
-  const removed = existing!
-    .filter((l) => !wanted.has(l.order_index) || idByOrder.get(l.order_index) !== l.id)
-    .map((l) => l.id as string);
-  const kept = lessons.filter((l) => idByOrder.has(l.order_index));
-  const added = lessons.filter((l) => !idByOrder.has(l.order_index));
+  const { idByOrder, removed, kept, added } = planLessons(existing!, lessons);
 
   if (DRY_RUN) {
     console.log(

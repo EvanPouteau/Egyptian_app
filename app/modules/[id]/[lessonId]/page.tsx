@@ -10,7 +10,9 @@ import FeedbackActions from '@/components/FeedbackActions';
 import HashHighlight from '@/components/HashHighlight';
 import { SITE } from '@/lib/site-config';
 import { getLesson, getModule, getModuleLessons, getVocabLite } from '@/lib/content';
-import { describeLesson } from '@/lib/meta';
+import { describeLesson, openGraphFor } from '@/lib/meta';
+import JsonLd from '@/components/JsonLd';
+import { lessonData } from '@/lib/structured-data';
 import LessonListening from '@/components/LessonListening';
 import { hashSeed, listenable, listeningSeries } from '@/lib/listening';
 
@@ -25,11 +27,14 @@ export async function generateMetadata({
   const [data, mod] = await Promise.all([getLesson(lessonId), getModule(id)]);
 
   if (!data || data.module_id !== id) return { title: 'Leçon introuvable' };
+  // Le numéro de jour désambiguïse les titres qui se répètent d'un module à l'autre
+  // (« Mini-dialogue », « Exemples et mise en pratique »…).
+  const title = data.day !== null ? `${data.title} · jour ${data.day}` : data.title;
+  const description = describeLesson(data.content_markdown, data.title, mod?.title ?? id, data.vocab_items);
   return {
-    // Le numéro de jour désambiguïse les titres qui se répètent d'un module à l'autre
-    // (« Mini-dialogue », « Exemples et mise en pratique »…).
-    title: data.day !== null ? `${data.title} · jour ${data.day}` : data.title,
-    description: describeLesson(data.content_markdown, data.title, mod?.title ?? id, data.vocab_items),
+    title,
+    description,
+    openGraph: openGraphFor(title, description, `/modules/${id}/${lessonId}`),
   };
 }
 
@@ -40,11 +45,12 @@ export default async function LessonPage({
 }) {
   const { id, lessonId } = await params;
 
-  const [lesson, siblings, user, allVocab] = await Promise.all([
+  const [lesson, siblings, user, allVocab, mod] = await Promise.all([
     getLesson(lessonId),
     getModuleLessons(id),
     getUser(),
     getVocabLite(),
+    getModule(id),
   ]);
   const readLessons = await getReadLessons(user?.id ?? null, id);
 
@@ -64,6 +70,15 @@ export default async function LessonPage({
 
   return (
     <main className="mx-auto max-w-3xl px-6 pb-20 pt-8 sm:px-8">
+      {mod && (
+        <JsonLd
+          data={lessonData(
+            mod,
+            lesson,
+            describeLesson(lesson.content_markdown, lesson.title, mod.title, lesson.vocab_items)
+          )}
+        />
+      )}
       <Link
         href={`/modules/${id}`}
         className="inline-block py-2 text-sm text-[var(--muted)] transition-colors hover:text-[var(--ink)]"

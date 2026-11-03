@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
+import { getModuleLessons } from '@/lib/content';
 import { deriveStatus } from '@/lib/progress';
 
 /**
@@ -10,6 +11,9 @@ import { deriveStatus } from '@/lib/progress';
  * Après chaque changement on recalcule le statut du module : c'est ce qui permet à un
  * module de passer à « terminé » au moment où la dernière leçon est lue, sans que
  * l'apprenant ait à repasser le quiz.
+ *
+ * Le rang doit être celui d'une leçon du module : le statut compte les leçons lues, et
+ * marquer des rangs inventés (999, 1000…) aurait suffi à « terminer » un module.
  */
 export async function toggleLessonRead(
   moduleId: string,
@@ -21,6 +25,9 @@ export async function toggleLessonRead(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return;
+
+  const lessons = await getModuleLessons(moduleId);
+  if (!lessons.some((l) => l.order_index === orderIndex)) return;
 
   if (read) {
     await supabase.from('lesson_completions').upsert(

@@ -9,12 +9,10 @@ import type { NextConfig } from 'next';
  * (clickjacking) — ni de faire deviner un type MIME à un navigateur, ni de transmettre
  * l'URL complète d'une leçon à un tiers dans l'en-tête `Referer`.
  *
- * Ce qui n'est PAS ajouté ici : une `Content-Security-Policy` complète. Elle demande
- * d'inventorier les scripts en ligne de Next, le domaine Supabase et Google Fonts, puis
- * de la vérifier page par page ; mal réglée, elle casse le site en silence. Seule la
- * directive `frame-ancestors` est posée, car elle ne restreint que l'encadrement et ne
- * peut donc rien casser. Une CSP complète reste à faire, et c'est un choix à assumer,
- * pas un oubli.
+ * La `Content-Security-Policy` complète n'est pas ici : elle porte un nonce différent à
+ * chaque requête, elle est donc posée par `proxy.ts` (voir lib/csp.ts). Celle d'ici ne
+ * garde que `frame-ancestors`, pour les réponses que le proxy ne voit pas (fichiers
+ * statiques, sons) ; sur les pages, le navigateur applique les deux.
  */
 const enTetesSecurite = [
   // Empêche le navigateur de « deviner » un type MIME différent de celui annoncé.

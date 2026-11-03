@@ -47,11 +47,16 @@ const ACADEMIC_PATTERN = new RegExp(`[${Object.keys(ACADEMIC).join('')}]`, 'gi')
  * « elbeit » désignent le même mot).
  */
 export function normalizeStrict(raw: string): string {
+  // La table académique passe AVANT le retrait des accents : décomposé, « ḥ » devenait
+  // « h » + point souscrit, le point était retiré et la table ne voyait plus qu'un « h »
+  // (« ḥ » → « h » au lieu de « 7 », « š » → « s » au lieu de « sh »). Trouvé par
+  // tests/arabizi.test.ts. NFC d'abord, pour une saisie déjà décomposée.
   return raw
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '') // accents français saisis par habitude (é, è, ê…)
+    .normalize('NFC')
     .toLowerCase()
     .replace(ACADEMIC_PATTERN, (ch) => ACADEMIC[ch.toLowerCase()] ?? ch)
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '') // accents français saisis par habitude (é, è, ê…)
     .replace(/[^a-z0-9]/g, '');
 }
 

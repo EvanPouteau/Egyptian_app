@@ -1,7 +1,8 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
-import { todayKey } from '@/lib/daily';
+import { getDailyLesson, todayKey } from '@/lib/daily';
+import { grade } from '@/lib/grading';
 import { getStreak, type Streak } from '@/lib/streak';
 import type { Answer } from '@/lib/quiz-scoring';
 
@@ -13,15 +14,24 @@ import type { Answer } from '@/lib/quiz-scoring';
  * tentative du jour fait foi, et l'XP n'est donc versée qu'une fois. La série, elle, est
  * recalculée dans les deux cas : rejouer ne l'incrémente pas une deuxième fois, mais
  * l'écran de résultat doit quand même pouvoir l'afficher.
+ *
+ * Le score est recalculé sur la leçon du jour reconstruite côté serveur : elle est
+ * déterministe (graine = utilisateur + date), le serveur retrouve donc les mêmes questions.
+ * Si une leçon a été marquée lue entre-temps, le vivier change et certaines questions ne se
+ * retrouvent plus : seules celles qui se retrouvent comptent.
  */
 export async function saveDailyReview(
-  result: { answers: Answer[]; score: number }
+  submitted: { answers: Pick<Answer, 'question_id' | 'given'>[] }
 ): Promise<Streak | undefined> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return;
+
+  const { questions } = await getDailyLesson(user.id);
+  const result = grade(submitted, questions, questions.length);
+  if (result.answers.length === 0) return getStreak(user.id);
 
   const { error } = await supabase.from('daily_reviews').insert({
     user_id: user.id,

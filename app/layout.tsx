@@ -1,8 +1,10 @@
 import type { Metadata, Viewport } from 'next';
+import { headers } from 'next/headers';
 import { Bricolage_Grotesque, Geist } from 'next/font/google';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { SITE } from '@/lib/site-config';
+import { openGraphFor } from '@/lib/meta';
 import './globals.css';
 
 // Polices de secours recalibrées à la main (« Geist Repli », « Bricolage Repli », voir
@@ -27,8 +29,7 @@ const display = Bricolage_Grotesque({
   fallback: ['Bricolage Repli'],
 });
 
-const DESCRIPTION =
-  "Apprendre l'arabe égyptien du Caire, module par module : alphabet, Arabizi, grammaire et conjugaison, de A1 à B2.";
+const DESCRIPTION = SITE.description;
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE.url),
@@ -58,20 +59,15 @@ export const metadata: Metadata = {
     // page pour ne pas être tronqué.
     title: '3arabi',
   },
-  openGraph: {
-    type: 'website',
-    locale: 'fr_FR',
-    url: SITE.url,
-    siteName: 'Arabe égyptien',
-    title: 'Arabe égyptien — parler le dialecte du Caire',
-    description: DESCRIPTION,
-    images: [{ url: '/icons/icon-512x512.png?v=2', width: 512, height: 512 }],
-  },
+  // L'image de partage est `app/opengraph-image.png` (1200 × 630), que Next déclare
+  // d'office sur toutes les pages : l'icône carrée de 512 px utilisée auparavant
+  // s'affichait en vignette minuscule sur LinkedIn et Facebook. Les pages de module et de
+  // leçon remplacent titre et description (`openGraphFor`, lib/meta.ts).
+  openGraph: openGraphFor('Arabe égyptien — parler le dialecte du Caire', DESCRIPTION),
   twitter: {
-    card: 'summary',
+    card: 'summary_large_image',
     title: 'Arabe égyptien — parler le dialecte du Caire',
     description: DESCRIPTION,
-    images: ['/icons/icon-512x512.png?v=2'],
   },
 };
 
@@ -88,7 +84,11 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({ children }: LayoutProps<'/'>) {
+export default async function RootLayout({ children }: LayoutProps<'/'>) {
+  // Nonce de la CSP, posé par proxy.ts (voir lib/csp.ts) : sans lui, le navigateur
+  // refuserait le script anti-flash ci-dessous.
+  const nonce = (await headers()).get('x-nonce') ?? undefined;
+
   return (
     // `suppressHydrationWarning` : le script anti-flash ci-dessous pose `data-theme` sur
     // <html> avant l'hydratation, React verrait sinon un attribut absent du rendu serveur.
@@ -110,6 +110,7 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
           système qui s'applique, via `color-scheme: light dark` (voir globals.css).
         */}
         <script
+          nonce={nonce}
           dangerouslySetInnerHTML={{
             __html: `try{var t=localStorage.getItem('theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}`,
           }}

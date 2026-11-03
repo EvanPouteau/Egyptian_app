@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "vitest run",
     "normalize": "tsx scripts/normalize-arabizi.ts",
     "import": "tsx scripts/import-data.ts",
     "generate:quiz": "tsx scripts/generate-quiz.ts",
@@ -36,6 +37,7 @@
     "eslint-config-next": "16.4.4",
     "tailwindcss": "^4",
     "tsx": "^4.23.11",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^5.0.5"
   }
 }
