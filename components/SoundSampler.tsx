@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 
 /**
  * Les quatre sons qui expliquent l'Arabizi.
@@ -50,6 +50,7 @@ const TONES = ['pop-tone-grenade', 'pop-tone-gold', 'pop-tone-turquoise', 'pop-t
 
 export default function SoundSampler() {
   const [playing, setPlaying] = useState<string | null>(null);
+  const hintId = useId();
 
   // Une seule lecture à la fois : cliquer sur une lettre coupe la précédente.
   // Les quatre sons sont gérés par ce composant unique, donc l'audio courant tient dans
@@ -96,10 +97,17 @@ export default function SoundSampler() {
         const isPlaying = playing === sound.src;
         return (
           <li key={sound.src} className="rise" style={{ '--i': i } as React.CSSProperties}>
+            {/*
+              Pas d'`aria-label` : il ne reprenait pas le texte affiché (« 3 », « 3ayn »,
+              « Écouter »), et qui pilote son appareil à la voix dit ce qu'il voit
+              (WCAG 2.5.3, signalé par axe et Lighthouse). Le nom vient donc du contenu
+              visible ; la phrase d'explication, trop longue pour un nom, passe en
+              description (`aria-describedby`).
+            */}
             <button
               type="button"
               onClick={() => play(sound.src)}
-              aria-label={`Écouter la lettre ${sound.name}, transcrite ${sound.digit} en Arabizi`}
+              aria-describedby={`${hintId}-${i}`}
               aria-pressed={isPlaying}
               className={`pop-card ${TONES[i % TONES.length]} w-full items-center text-center ${
                 isPlaying ? 'sound-card-on' : ''
@@ -120,7 +128,13 @@ export default function SoundSampler() {
                 <span className="display text-lg">{sound.name}</span>
               </span>
 
-              <span className="mt-2 text-sm font-medium leading-relaxed">{sound.hint}</span>
+              <span
+                id={`${hintId}-${i}`}
+                aria-hidden="true"
+                className="mt-2 text-sm font-medium leading-relaxed"
+              >
+                {sound.hint}
+              </span>
 
               <span className="mt-auto inline-flex items-center gap-1.5 pt-4 text-sm font-bold">
                 <span aria-hidden="true">{isPlaying ? '❚❚' : '▶'}</span>

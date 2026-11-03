@@ -93,16 +93,18 @@ export default async function LandingPage() {
 
         {/* Le collage mène à la section des sons, où chaque lettre se joue : un seul lien
             plutôt que quatre faux boutons. */}
+        {/* Le nom du lien vient de son contenu visible (« ع = 3 »…), précédé d'une phrase
+            réservée aux lecteurs d'écran. Un `aria-label` séparé ne reprenait pas ce qu'on
+            voit (WCAG 2.5.3, signalé par axe et Lighthouse). */}
         <Link
           href="#sons"
           className="rise mx-auto grid max-w-[20rem] grid-cols-2 gap-4 rounded-[2rem] p-2"
           style={{ '--i': 2 } as React.CSSProperties}
-          aria-label="Écouter les quatre sons de l’Arabizi : 3, 7, 5 et 2"
         >
+          <span className="sr-only">Écouter les quatre sons de l’Arabizi : </span>
           {STICKERS.map((s, i) => (
             <span
               key={s.digit}
-              aria-hidden="true"
               className={`pop-sticker ${s.tone}`}
               style={{ '--i': i } as React.CSSProperties}
             >

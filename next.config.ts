@@ -37,12 +37,35 @@ const enTetesSecurite = [
   },
 ];
 
+/**
+ * Sons (alphabet et vocabulaire). Mesuré (02/11/2026) : servis en `max-age=0`, chaque
+ * écoute refaisait un aller-retour au serveur. Sept jours de cache, puis un mois de
+ * renouvellement en arrière-plan. Pas `immutable` : un mot réenregistré garde le même nom
+ * de fichier (`public/audio/vocab/<sha1 du mot>.mp3`), il doit pouvoir être remplacé.
+ */
+const cacheSons = [
+  { key: 'Cache-Control', value: 'public, max-age=604800, stale-while-revalidate=2592000' },
+];
+
 const nextConfig: NextConfig = {
   // Inutile d'annoncer la pile technique à qui cherche une faille connue.
   poweredByHeader: false,
 
+  /**
+   * Métadonnées dans le `<head>` pour tous les visiteurs. Par défaut, sur les pages
+   * rendues à la demande, Next envoie celles de `generateMetadata` APRÈS le début de la
+   * page, dans le `<body>` (« streaming metadata »). Mesuré : Lighthouse ne voyait alors
+   * aucune description sur les modules et les leçons, comme tout robot qui n'exécute pas
+   * le JavaScript. Le coût, attendre `generateMetadata` avant d'envoyer la page, est faible
+   * ici : il ne lit que le contenu déjà en cache (lib/content.ts).
+   */
+  htmlLimitedBots: /.*/,
+
   async headers() {
-    return [{ source: '/:chemin*', headers: enTetesSecurite }];
+    return [
+      { source: '/:chemin*', headers: enTetesSecurite },
+      { source: '/audio/:chemin*', headers: cacheSons },
+    ];
   },
 };
 

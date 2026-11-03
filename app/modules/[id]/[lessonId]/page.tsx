@@ -9,7 +9,8 @@ import { getReadLessons } from '@/lib/progress';
 import FeedbackActions from '@/components/FeedbackActions';
 import HashHighlight from '@/components/HashHighlight';
 import { SITE } from '@/lib/site-config';
-import { getLesson, getModuleLessons, getVocabLite } from '@/lib/content';
+import { getLesson, getModule, getModuleLessons, getVocabLite } from '@/lib/content';
+import { describeLesson } from '@/lib/meta';
 import LessonListening from '@/components/LessonListening';
 import { hashSeed, listenable, listeningSeries } from '@/lib/listening';
 
@@ -21,12 +22,15 @@ export async function generateMetadata({
   params: Promise<{ id: string; lessonId: string }>;
 }): Promise<Metadata> {
   const { id, lessonId } = await params;
-  const data = await getLesson(lessonId);
+  const [data, mod] = await Promise.all([getLesson(lessonId), getModule(id)]);
 
   if (!data || data.module_id !== id) return { title: 'Leçon introuvable' };
-  // Le numéro de jour désambiguïse les titres qui se répètent d'un module à l'autre
-  // (« Mini-dialogue », « Exemples et mise en pratique »…).
-  return { title: data.day !== null ? `${data.title} · jour ${data.day}` : data.title };
+  return {
+    // Le numéro de jour désambiguïse les titres qui se répètent d'un module à l'autre
+    // (« Mini-dialogue », « Exemples et mise en pratique »…).
+    title: data.day !== null ? `${data.title} · jour ${data.day}` : data.title,
+    description: describeLesson(data.content_markdown, data.title, mod?.title ?? id, data.vocab_items),
+  };
 }
 
 export default async function LessonPage({

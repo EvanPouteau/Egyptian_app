@@ -28,8 +28,11 @@ export default async function Navbar() {
             ع
           </span>
           {/* Le nom disparaît sous 640 px : à 375 px, il ne restait plus assez de place
-              pour les liens sans que la barre passe à deux lignes. La marque suffit. */}
-          <span className="display hidden text-xl sm:inline">Arabe égyptien</span>
+              pour les liens sans que la barre passe à deux lignes. La marque suffit à
+              l'œil, mais pas à un lecteur d'écran : `sr-only` le masque sans le retirer.
+              Avec `hidden`, le lien n'avait plus aucun nom sur mobile (axe, Lighthouse :
+              « Links must have discernible text », sur toutes les pages). */}
+          <span className="display sr-only text-xl sm:not-sr-only">Arabe égyptien</span>
         </Link>
 
         {/* gap-2 sous 640 px : avec les cibles de 44 px, gap-3.5 faisait déborder la barre de
