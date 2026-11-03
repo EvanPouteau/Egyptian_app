@@ -1,6 +1,30 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+/* Polices de secours, affichées le temps que Geist et Bricolage arrivent (voir layout.tsx).
+   Arial mise à la largeur moyenne de la vraie police, mesurée sur les textes du site, pour
+   que les lignes se coupent aux mêmes mots avant et après le chargement : Bricolage en 800
+   (la graisse de `.display`) est 3,9 % plus large que l'Arial calée par Next, Geist en 400
+   3,4 % plus étroite. Les hauteurs (ascent, descent) sont celles des vraies polices,
+   divisées par size-adjust qui les agrandit aussi. Pas de `font-weight` : le gras reste
+   synthétisé, comme avec la police de Next, sans changer la largeur des caractères. */
+@font-face {
+  font-family: "Geist Repli";
+  src: local("Arial"), local("ArialMT");
+  size-adjust: 101.19%;
+  ascent-override: 99.33%;
+  descent-override: 29.15%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: "Bricolage Repli";
+  src: local("Arial"), local("ArialMT");
+  size-adjust: 109.49%;
+  ascent-override: 84.94%;
+  descent-override: 24.66%;
+  line-gap-override: 0%;
+}
+
 /* ==========================================================================
    1. Jetons de couleur
    --------------------------------------------------------------------------

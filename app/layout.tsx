@@ -5,9 +5,15 @@ import Footer from '@/components/Footer';
 import { SITE } from '@/lib/site-config';
 import './globals.css';
 
+// Polices de secours recalibrées à la main (« Geist Repli », « Bricolage Repli », voir
+// globals.css) au lieu de celles que Next calcule : les siennes sont mesurées sur la graisse
+// normale, et le texte changeait de nombre de lignes à l'arrivée de la vraie police (titre
+// de l'accueil 3 → 4 lignes, introduction 5 → 4 à 412 px). Tout ce qui suivait sautait.
 const geistSans = Geist({
   variable: '--font-geist-sans',
   subsets: ['latin'],
+  adjustFontFallback: false,
+  fallback: ['Geist Repli', 'Arial', 'sans-serif'],
 });
 
 // Bricolage Grotesque : une grotesque d'affiche, ronde et franche, pour le style « Pop du
@@ -17,6 +23,8 @@ const display = Bricolage_Grotesque({
   variable: '--font-display',
   subsets: ['latin'],
   weight: ['700', '800'],
+  adjustFontFallback: false,
+  fallback: ['Bricolage Repli'],
 });
 
 const DESCRIPTION =

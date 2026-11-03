@@ -121,17 +121,24 @@ export default function LessonPath({
                       </span>
                     )}
 
+                    {/* Le nom du lien commence par ce qui est affiché (le numéro), suivi
+                        du titre réservé aux lecteurs d'écran. Un `aria-label` le remplaçait
+                        sans reprendre le numéro visible : qui pilote à la voix en disant
+                        « 3 » ne trouvait pas le lien (WCAG 2.5.3, signalé par Lighthouse). */}
                     <Link
                       href={`/modules/${moduleId}/${lesson.id}`}
-                      aria-label={`${lesson.day === null ? '' : `Jour ${lesson.day} — `}${lesson.title}${lesson.read ? ' (lue)' : ''}`}
                       className={`dune-node lesson-node ${
                         lesson.read ? 'node-done' : 'node-todo'
                       } ${isCurrent ? 'node-current' : ''}`}
                       style={{ '--offset': offset } as React.CSSProperties}
                     >
                       {/* Lue : une coche à la place du numéro. La couleur ne porte donc
-                          jamais seule l'information. */}
-                      <span aria-hidden="true">{lesson.read ? '✓' : rank + 1}</span>
+                          jamais seule l'information. La coche, simple symbole, est tue :
+                          « (lue) » la remplace dans le nom. */}
+                      {lesson.read ? <span aria-hidden="true">✓</span> : <span>{rank + 1}</span>}
+                      <span className="sr-only">
+                        {`${lesson.read ? '' : ' : '}${lesson.day === null ? '' : `Jour ${lesson.day} — `}${lesson.title}${lesson.read ? ' (lue)' : ''}`}
+                      </span>
                     </Link>
 
                     <div
