@@ -2,10 +2,9 @@
  * Écran de chargement du glossaire, à la place de celui du site (app/loading.tsx).
  *
  * Les 544 mots font la page la plus lourde du site : le navigateur a le temps d'afficher
- * l'écran d'attente avant la liste. Celui du site ne mesure que 540 px, le pied de page
- * apparaissait donc juste dessous, puis la liste (30 000 px) le chassait hors de l'écran —
- * un saut de mise en page de 0,22 mesuré à chaque chargement sur ordinateur. Celui-ci
- * occupe toute la hauteur de l'écran : le pied de page reste hors de vue jusqu'à la fin.
+ * l'écran d'attente à chaque chargement. Comme celui du site, il occupe toute la hauteur de
+ * l'écran pour que le pied de page reste hors de vue jusqu'à l'arrivée de la liste ; ses
+ * formes sont celles du glossaire (recherche, lignes) plutôt que des cartes.
  */
 export default function Loading() {
   return (

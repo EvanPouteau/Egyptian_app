@@ -8,10 +8,16 @@
  *
  * Un squelette aux formes du site (titre, cartes) plutôt qu'une roue : la page qui arrive
  * se met en place sans que tout saute.
+ *
+ * Haut d'un écran (`min-h-[100svh]`) : avec ses 540 px, le pied de page apparaissait
+ * dessous quand le serveur tardait (démarrage à froid), puis la page le chassait de l'écran
+ * — saut de mise en page de 0,22 mesuré sur ordinateur. Presque toutes les pages font plus
+ * d'un écran ; pour les rares plus courtes (connexion, inscription), le pied de page remonte
+ * à l'arrivée du contenu, un saut bien plus petit.
  */
 export default function Loading() {
   return (
-    <main className="mx-auto w-full max-w-6xl px-4 pb-20 pt-10 sm:px-8" aria-busy="true">
+    <main className="mx-auto min-h-[100svh] w-full max-w-6xl px-4 pb-20 pt-10 sm:px-8" aria-busy="true">
       <p role="status" className="sr-only">
         Chargement de la page…
       </p>
