@@ -445,6 +445,230 @@ body {
   background: color-mix(in srgb, var(--border) 22%, transparent);
 }
 
+/* --------------------------------------------------------------------------
+   Tableaux des leçons, en « Pop » : cadre cerclé et ombre dure comme les cartes, en-tête
+   en aplat doré, cellules aérées. Les pages légales gardent le tableau sobre ci-dessus.
+   Les classes `cell-*` sont posées par `components/LessonViewer.tsx` selon la forme de
+   la cellule (mot arabe + lecture, arabe seul, texte mêlé).
+   -------------------------------------------------------------------------- */
+.prose-lecon .table-scroll {
+  border: 2px solid var(--line-strong);
+  border-radius: var(--r-md);
+  box-shadow: var(--pop-shadow);
+  background: var(--surface-raised);
+}
+
+/* Cadre posé par `components/ScrollTable.tsx` : la marge passe du conteneur défilant au
+   cadre, qui porte aussi la mention « Faites glisser » et les dégradés de bord. */
+.table-frame {
+  margin-block: 2em;
+}
+.prose .table-frame .table-scroll {
+  margin-block: 0;
+}
+.table-hint {
+  margin: 0 0 0.4rem;
+  text-align: right;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+.prose .table-hint {
+  margin: 0 0 0.4rem;
+}
+.table-box {
+  position: relative;
+}
+/* Dégradé du côté où il reste à lire. Posé sur le cadre et non dans le tableau : les
+   lignes (en-tête opaque, lignes alternées) recouvriraient un fond de conteneur. */
+.table-box::before,
+.table-box::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  width: 2.25rem;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.table-box::before {
+  left: 2px;
+  border-radius: var(--r-md) 0 0 var(--r-md);
+  background: linear-gradient(to right, var(--surface-raised), transparent);
+}
+.table-box::after {
+  right: 2px;
+  border-radius: 0 var(--r-md) var(--r-md) 0;
+  background: linear-gradient(to left, var(--surface-raised), transparent);
+}
+.table-frame[data-overflow="true"][data-start="false"] .table-box::before,
+.table-frame[data-overflow="true"][data-end="false"] .table-box::after {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .table-box::before,
+  .table-box::after {
+    transition: none;
+  }
+}
+.prose-lecon :where(table) {
+  font-size: 1rem;
+  width: 100%;
+  border-collapse: collapse;
+}
+.prose-lecon :where(thead th) {
+  background: var(--pop-gold);
+  color: var(--pop-ink);
+  font-family: var(--font-display), "Segoe UI", sans-serif;
+  font-weight: 700;
+  font-size: 0.875rem;
+  letter-spacing: 0.01em;
+  padding: 0.7rem 1rem;
+  border-bottom: 2px solid var(--line-strong);
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.prose-lecon :where(tbody td) {
+  padding: 0.7rem 1rem;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--border);
+  line-height: 1.45;
+}
+.prose-lecon :where(tbody tr:last-child td) {
+  border-bottom: 0;
+}
+.prose-lecon :where(tbody tr:nth-child(even)) {
+  background: color-mix(in srgb, var(--gold) 7%, transparent);
+}
+/* La première colonne porte presque toujours ce qu'on cherche (le pronom, le mot, le
+   temps) : un cran plus appuyée, l'œil s'y accroche en descendant. */
+.prose-lecon :where(tbody td:first-child) {
+  font-weight: 600;
+}
+
+/* Un mot arabe et sa lecture : l'arabe domine, la lecture le sous-titre — l'ordre dans
+   lequel on apprend un mot, comme sur les fiches de vocabulaire. */
+.cell-word {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.05rem;
+}
+.cell-ar {
+  font-family: "Segoe UI", "Noto Naskh Arabic", "Traditional Arabic", serif;
+  font-size: 1.4em;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--ink);
+}
+.cell-letter {
+  font-size: 2em;
+  line-height: 1.3;
+}
+.cell-reading {
+  font-size: 0.875em;
+  font-weight: 600;
+  color: var(--gold-text);
+}
+/* Arabe glissé dans une phrase de cellule : un peu moins grand que le mot vedette, pour
+   ne pas casser la ligne. */
+.prose-lecon :where(td, th) .arabic {
+  font-size: 1.3em;
+  line-height: 1.5;
+}
+
+/* Cartes posées par `components/LessonViewer.tsx` pour les tableaux de 3 colonnes ou
+   plus : sous 640 px, elles remplacent le tableau, qui défilait de côté. Une seule des
+   deux versions est affichée ; l'autre est en `display: none`, hors de l'arbre
+   d'accessibilité, pour ne pas être lue deux fois. */
+.prose-lecon .table-cards {
+  list-style: none;
+  margin: 2em 0;
+  padding: 0;
+  display: grid;
+  gap: 0.9rem;
+}
+/* Les bascules d'affichage viennent APRÈS le `display: grid` ci-dessus, à spécificité
+   égale : placées avant, elles étaient écrasées et les cartes s'affichaient aussi sur
+   ordinateur, sous le tableau (mesuré). */
+@media (max-width: 639px) {
+  .prose-lecon .table-wide {
+    display: none;
+  }
+}
+@media (min-width: 640px) {
+  .prose-lecon .table-cards {
+    display: none;
+  }
+}
+.prose-lecon .table-cards > li {
+  margin: 0;
+  padding: 0;
+}
+.prose-lecon .table-cards > li::marker {
+  content: none;
+}
+.table-card {
+  border: 2px solid var(--line-strong);
+  border-radius: var(--r-md);
+  box-shadow: var(--pop-shadow);
+  background: var(--surface-raised);
+  overflow: hidden;
+}
+.prose-lecon .table-card-title {
+  margin: 0;
+  padding: 0.6rem 1rem;
+  background: var(--pop-gold);
+  color: var(--pop-ink);
+  border-bottom: 2px solid var(--line-strong);
+  font-family: var(--font-display), "Segoe UI", sans-serif;
+  font-weight: 800;
+  font-size: 1.05rem;
+  line-height: 1.35;
+}
+/* Sur l'aplat doré, l'arabe et sa lecture prennent l'encre de l'aplat. */
+.table-card-title .cell-ar,
+.table-card-title .cell-reading {
+  color: var(--pop-ink);
+}
+.prose-lecon .table-card-fields {
+  margin: 0;
+  padding: 0.25rem 1rem 0.4rem;
+}
+.table-card-field {
+  display: grid;
+  grid-template-columns: minmax(6rem, 38%) 1fr;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.table-card-field:last-child {
+  border-bottom: 0;
+}
+.prose-lecon .table-card-field dt {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+.prose-lecon .table-card-field dd {
+  margin: 0;
+  padding: 0;
+}
+
+/* Sur téléphone, des cellules un peu moins aérées : à 375 px, chaque colonne gagnée est
+   une colonne qu'on lit sans faire défiler. */
+@media (max-width: 639px) {
+  .prose-lecon :where(thead th) {
+    padding: 0.6rem 0.75rem;
+  }
+  .prose-lecon :where(tbody td) {
+    padding: 0.6rem 0.75rem;
+  }
+}
+
 .prose :where(code)::before,
 .prose :where(code)::after {
   content: "";
