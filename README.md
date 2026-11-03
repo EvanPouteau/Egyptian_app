@@ -37,6 +37,8 @@ A1 au B2 : alphabet, Arabizi, vocabulaire, grammaire et conjugaison.
   production, lecture de l'arabe et écoute).
 - **Suivi de progression** : compte utilisateur, leçons lues, XP et tableau de bord.
 - **Glossaire** : tout le vocabulaire, cherchable en arabe, en Arabizi et en français.
+- **Tableaux de leçon lisibles** : l'arabe en grand avec sa lecture dessous ; sur
+  téléphone, les tableaux larges deviennent des cartes au lieu de défiler de côté.
 - **Traductions après chaque réponse** : la traduction de chaque choix s'affiche une fois
   la question corrigée.
 - **Thème clair / sombre**, site adapté au mobile, accessible au clavier et aux lecteurs
@@ -57,6 +59,26 @@ A1 au B2 : alphabet, Arabizi, vocabulaire, grammaire et conjugaison.
   des fichiers mp3 statiques et n'appelle aucun service à l'exécution.
 - Hébergement sur [Vercel](https://vercel.com) : chaque push sur `main` est déployé
   automatiquement.
+- [Vitest](https://vitest.dev) pour les tests unitaires.
+
+## Qualité, performance et sécurité
+
+Le site a fait l'objet d'un audit complet en novembre 2026 (performance, accessibilité,
+référencement, sécurité, écoconception), suivi de trois séries de corrections. Mesures
+prises sur le site en ligne après corrections :
+
+| Domaine | Résultat |
+|---|---|
+| Accessibilité | Lighthouse 100 sur toutes les pages testées ; axe-core : aucun défaut sur 7 pages, en thème clair et sombre |
+| Référencement | Lighthouse 100 ; une description propre à chacune des 141 leçons, image de partage, données structurées (cours, leçon, fil d'Ariane) |
+| Performance | Lighthouse 92 à 100 (le glossaire, 544 mots sur une seule page, est le plus lent sur mobile : 85 à 94) ; la page ne bouge plus au chargement (décalage inférieur à 0,01) |
+| Sécurité | Politique de sécurité du contenu stricte (aucun script hors du site), protection contre l'encadrement, scores recalculés par le serveur ; dépendances du site sans faille connue (`npm audit`), 18 alertes modérées restant dans les seuls outils de développement (eslint, plugin typographique), absents du site servi |
+| Vie privée | Aucun service tiers ni cookie pour un visiteur sans compte |
+| Écoconception | EcoIndex A sur la plupart des pages (D pour le glossaire) ; sons mis en cache 7 jours |
+
+Les corrections ont aussi porté sur ce que l'audit a fait remonter en chemin : un saut de
+la page à l'arrivée des polices, des adresses de leçon qui changeaient à chaque import, et
+un défaut du correcteur d'Arabizi trouvé par les tests.
 
 ## Comment ce projet a été fait
 
@@ -73,6 +95,8 @@ rôle :
 - trier à l'oreille les 525 sons du vocabulaire avec Heaven, qui a réenregistré ceux qui
   sonnaient faux et corrigé le contenu au passage (au Caire, un chauffeur se dit سواق,
   pas سائق) ;
+- faire auditer le site, puis décider de ce qui valait d'être corrigé (par exemple :
+  garder les pages sans cache, déjà rapides, plutôt qu'une refonte lourde) ;
 - modifier moi-même le code quand le résultat proposé ne me convient pas ;
 - déployer et maintenir le site.
 
@@ -86,13 +110,14 @@ data/         contenu pédagogique source, en JSON
 public/audio/ sons de l'alphabet et du vocabulaire (mp3)
 scripts/      outils locaux : import, génération des quiz, des exercices et des sons, tri des sons
 supabase/     schéma de la base (migrations SQL)
+tests/        tests unitaires (npm test)
 ```
 
 Le rôle de chaque fichier est décrit dans [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Lancer le projet en local
 
-Prérequis : Node.js 20 ou plus récent et un projet Supabase.
+Prérequis : Node.js 22.12 ou plus récent (exigé par Vitest) et un projet Supabase.
 
 ### 1. Installer
 
