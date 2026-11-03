@@ -1,7 +1,29 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { foldArabic, foldLatin, isArabic } from '@/lib/search';
+import { foldArabic, foldArabizi, foldLatin, isArabic } from '@/lib/search';
+
+/**
+ * Le texte cherchable de chaque entrée : arabe, Arabizi (sous ses deux formes) et
+ * français, repliés comme la requête. Calculé une fois, au premier filtrage, à partir de
+ * ce qui est affiché : le serveur l'écrivait auparavant dans un `data-mot` sur chacune
+ * des 544 lignes, soit des dizaines de Ko envoyés deux fois pour un champ que la plupart
+ * des visiteurs ne touchent pas.
+ */
+let index: Map<HTMLElement, string> | null = null;
+
+function texteCherchable(el: HTMLElement) {
+  const texte = (cls: string) => el.querySelector(`.${cls}`)?.textContent ?? '';
+  const translit = texte('glossaire-translit');
+  return [
+    foldLatin(translit),
+    foldArabizi(translit),
+    foldLatin(texte('glossaire-francais')),
+    foldArabic(texte('glossaire-arabe').replace('—', '')),
+  ]
+    .filter(Boolean)
+    .join(' ');
+}
 
 /**
  * Filtre du glossaire.
@@ -39,10 +61,16 @@ export default function GlossaireFiltre({
     const terme = q.trim();
     const aiguille = terme ? (isArabic(terme) ? foldArabic(terme) : foldLatin(terme)) : '';
 
+    // Reconstruit si la liste a changé de nœuds (navigation aller-retour vers la page).
+    const lignes = document.querySelectorAll<HTMLElement>('#glossaire > li');
+    if (!index || !index.has(lignes[0])) {
+      index = new Map([...lignes].map((el) => [el, texteCherchable(el)]));
+    }
+
     let n = 0;
-    for (const el of document.querySelectorAll<HTMLElement>('#glossaire > li')) {
+    for (const el of lignes) {
       const correspond =
-        (!aiguille || (el.dataset.mot ?? '').includes(aiguille)) &&
+        (!aiguille || index.get(el)!.includes(aiguille)) &&
         (!th || (el.dataset.themes ?? '').split(' ').includes(th));
       el.hidden = !correspond;
       if (correspond) n++;

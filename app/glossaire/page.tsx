@@ -1,11 +1,10 @@
-import Link from 'next/link';
 import type { Metadata } from 'next';
 import GlossaireFiltre from '@/components/GlossaireFiltre';
-import LetterAudioButton from '@/components/LetterAudioButton';
+import GlossaireSons from '@/components/GlossaireSons';
 import { vocabAudioSrc } from '@/lib/vocab-audio';
 import { getModules } from '@/lib/content';
 import { getVocabIndex } from '@/lib/vocab-index';
-import { foldArabic, foldArabizi, foldLatin, type VocabHit } from '@/lib/search';
+import { foldArabic, foldLatin, type VocabHit } from '@/lib/search';
 
 export const dynamic = 'force-dynamic';
 
@@ -69,6 +68,50 @@ function grouper(index: VocabHit[]): Entree[] {
   );
 }
 
+/** Échappe un texte pour le HTML, contenu comme valeur d'attribut entre guillemets. */
+function esc(s: string): string {
+  return s
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+/**
+ * Une entrée du glossaire, en HTML et non en JSX.
+ *
+ * Une liste en JSX, même rendue par le serveur, est hydratée élément par élément : React
+ * parcourt les ~3 900 nœuds de la liste au chargement pour les rattacher à son arbre,
+ * alors que rien n'y est interactif — le filtre ne fait que masquer des lignes et les
+ * boutons d'écoute ont un écouteur commun (GlossaireSons). Posée par
+ * `dangerouslySetInnerHTML`, la liste est un seul nœud pour React. Tout ce qui vient du
+ * contenu passe par `esc`.
+ *
+ * Le bouton suit l'Arabizi plutôt que l'arabe : la colonne arabe fait 6,5 rem, un bouton
+ * de 40 px y repousserait les expressions longues sur deux lignes.
+ */
+function ligne(e: Entree): string {
+  const themes = esc(e.sources.map((s) => s.m).join(' '));
+  const son = e.audio
+    ? `<button type="button" class="glossaire-son" data-son="${esc(e.audio)}" aria-label="Écouter la prononciation de ${esc(e.translitteration)}"></button>`
+    : '';
+  const sources = e.sources
+    .map(
+      (s) =>
+        `<a href="/modules/${esc(s.m)}/${esc(s.l)}#mot-${esc(s.i)}">${esc(s.d !== null ? `Jour ${s.d}` : s.mt)}</a>`
+    )
+    .join('');
+  return (
+    `<li class="glossaire-entree" data-themes="${themes}">` +
+    `<span class="arabic glossaire-arabe" dir="rtl">${esc(e.arabe ?? '—')}</span>` +
+    `<span class="glossaire-translit">${esc(e.translitteration)}${son}</span>` +
+    `<span class="glossaire-francais">${esc(e.francais)}</span>` +
+    `<span class="glossaire-sources">${sources}</span>` +
+    `</li>`
+  );
+}
+
 export default async function GlossairePage() {
   const index = await getVocabIndex();
   const entrees = grouper(index);
@@ -105,6 +148,7 @@ export default async function GlossairePage() {
       </header>
 
       <GlossaireFiltre total={entrees.length} themes={themes} />
+      <GlossaireSons />
 
       {/*
         Liste et non tableau : à 375 px, quatre colonnes imposeraient un défilement
@@ -112,54 +156,22 @@ export default async function GlossairePage() {
         mobile et s'aligne en colonnes dès 640 px, sans jamais déborder.
 
         Les lignes sont rendues par le serveur, et le filtre se contente de les masquer.
-        Les repasser en props d'un composant client aurait fait voyager les 543 mots deux
-        fois : une fois en HTML, une fois dans la charge React.
+
+        544 lignes, chaque octet compte deux fois : une fois dans le HTML, une fois dans la
+        charge React qui l'accompagne. D'où un balisage réduit au strict nécessaire —
+        - pas de composant client par ligne : les boutons d'écoute sont de simples
+          `<button data-son>`, servis par un seul écouteur (GlossaireSons). 537 boutons
+          `LetterAudioButton` coûtaient autant d'hydratations ;
+        - des `<a>` et non des `<Link>` vers les leçons : un `<Link>` est lui aussi un
+          composant client, et il précharge la leçon dès qu'il entre à l'écran, soit des
+          centaines de requêtes en faisant défiler la liste ;
+        - les styles dans globals.css (`.glossaire-*`), pas en classes répétées 544 fois ;
+        - pas de texte de recherche précalculé en `data-` : le filtre le tire du texte
+          affiché, au premier caractère tapé ;
+        - la liste passe en HTML tout fait (voir `ligne`), que React pose sans le parcourir.
+        Mesuré en production avant ce régime : 5 081 éléments, 1 125 Ko de HTML brut.
       */}
-      <ul id="glossaire" className="mt-6">
-        {entrees.map((e) => (
-          <li
-            key={e.cle}
-            className="glossaire-entree"
-            data-mot={[
-              foldLatin(e.translitteration),
-              foldArabizi(e.translitteration),
-              foldLatin(e.francais),
-              foldArabic(e.arabe ?? ''),
-            ]
-              .filter(Boolean)
-              .join(' ')}
-            data-themes={e.sources.map((s) => s.m).join(' ')}
-          >
-            <span className="arabic glossaire-arabe" dir="rtl">
-              {e.arabe ?? '—'}
-            </span>
-            {/* Le bouton suit l'Arabizi plutôt que l'arabe : la colonne arabe fait 6,5 rem,
-                un bouton de 40 px y repousserait les expressions longues sur deux lignes.
-                `glossaire-audio` (globals.css) : la cible reste de 40 px sans rendre
-                chacune des 544 lignes plus haute. */}
-            <span className="font-semibold">
-              {e.translitteration}
-              {e.audio && (
-                <LetterAudioButton src={e.audio} label={e.translitteration} className="glossaire-audio" />
-              )}
-            </span>
-            <span className="text-[var(--muted)]">{e.francais}</span>
-            <span className="glossaire-sources">
-              {e.sources.map((s, i) => (
-                <span key={`${s.l}-${s.i}`}>
-                  {i > 0 && <span aria-hidden="true"> · </span>}
-                  <Link
-                    href={`/modules/${s.m}/${s.l}#mot-${s.i}`}
-                    className="text-[var(--muted)] transition-colors hover:text-[var(--ink)]"
-                  >
-                    {s.d !== null ? `Jour ${s.d}` : s.mt}
-                  </Link>
-                </span>
-              ))}
-            </span>
-          </li>
-        ))}
-      </ul>
+      <ul id="glossaire" className="mt-6" dangerouslySetInnerHTML={{ __html: entrees.map(ligne).join('') }} />
 
       <p id="glossaire-vide" hidden className="mt-8 text-sm text-[var(--muted)]">
         Aucun mot ne correspond à cette recherche.

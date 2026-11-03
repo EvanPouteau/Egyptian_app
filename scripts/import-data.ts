@@ -23,6 +23,9 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: { persistSession: false },
 });
 
+// `--dry-run` : lit la base et annonce ce que l'import ferait de chaque leçon, sans écrire.
+const DRY_RUN = process.argv.includes('--dry-run');
+
 const DATA_DIR = path.join(process.cwd(), 'data');
 
 type JsonVocab = { arabic?: string | null; transliteration: string; french: string };
@@ -201,29 +204,77 @@ async function importPayload({ module, lessons }: ImportPayload) {
     description: module.description ?? null,
     order_index: module.order_index,
   };
+  // Les leçons sont mises à jour SUR PLACE, appariées par leur rang dans le module
+  // (`order_index`), au lieu d'être supprimées puis recréées : l'UUID d'une leçon fait son
+  // adresse (/modules/<module>/<uuid>), et le régénérer à chaque import cassait les liens
+  // partagés, les favoris et les pages connues des moteurs de recherche. Le rang est aussi
+  // la clé de la progression de lecture (lesson_completions, migration 005) : une leçon
+  // qui garde son rang garde donc à la fois son adresse et ses coches.
+  const { data: existing, error: existingError } = await supabase
+    .from('lessons')
+    .select('id, order_index')
+    .eq('module_id', module.id);
+  fail('lecture des leçons en place', existingError);
+
+  const idByOrder = new Map(existing!.map((l) => [l.order_index, l.id as string]));
+  const wanted = new Set(lessons.map((l) => l.order_index));
+  // Retirées : les rangs absents du JSON, et les éventuels doublons d'un même rang (seul
+  // le dernier lu est gardé).
+  const removed = existing!
+    .filter((l) => !wanted.has(l.order_index) || idByOrder.get(l.order_index) !== l.id)
+    .map((l) => l.id as string);
+  const kept = lessons.filter((l) => idByOrder.has(l.order_index));
+  const added = lessons.filter((l) => !idByOrder.has(l.order_index));
+
+  if (DRY_RUN) {
+    console.log(
+      `· ${module.id.padEnd(18)} ${kept.length} gardées, ${added.length} nouvelles, ${removed.length} supprimées`
+    );
+    return { lessons: lessons.length, vocab: 0, quiz: 0 };
+  }
+
   fail('upsert module', (await supabase.from('modules').upsert(moduleRow)).error);
 
-  // Réimport idempotent : on repart d'une ardoise propre. La suppression des leçons
-  // cascade sur vocab_items.
+  // Le vocabulaire et les questions n'ont pas d'adresse propre : on les remplace en bloc.
   fail('purge quiz', (await supabase.from('quiz_questions').delete().eq('module_id', module.id)).error);
-  fail('purge leçons', (await supabase.from('lessons').delete().eq('module_id', module.id)).error);
+  if (existing!.length) {
+    fail(
+      'purge vocab',
+      (await supabase.from('vocab_items').delete().in('lesson_id', existing!.map((l) => l.id))).error
+    );
+  }
+  // Une leçon dont le rang a disparu du JSON part, avec son vocabulaire (cascade).
+  if (removed.length) {
+    fail('purge leçons retirées', (await supabase.from('lessons').delete().in('id', removed)).error);
+  }
 
-  const { data: inserted, error: lessonsError } = await supabase
-    .from('lessons')
-    .insert(
-      lessons.map((l) => ({
-        module_id: module.id,
-        day: l.day,
-        section: l.section,
-        title: l.title,
-        content_markdown: l.content_markdown,
-        order_index: l.order_index,
-      }))
-    )
-    .select('id, order_index');
-  fail('insert leçons', lessonsError);
+  const row = (l: JsonLesson) => ({
+    module_id: module.id,
+    day: l.day,
+    section: l.section,
+    title: l.title,
+    content_markdown: l.content_markdown,
+    order_index: l.order_index,
+  });
 
-  const lessonIdByOrder = new Map(inserted!.map((l) => [l.order_index, l.id]));
+  // Deux appels plutôt qu'un upsert mêlé : une ligne sans `id` y recevrait NULL et non
+  // l'UUID par défaut.
+  if (kept.length) {
+    fail(
+      'mise à jour des leçons',
+      (await supabase.from('lessons').upsert(kept.map((l) => ({ id: idByOrder.get(l.order_index)!, ...row(l) })))).error
+    );
+  }
+  if (added.length) {
+    const { data: inserted, error } = await supabase
+      .from('lessons')
+      .insert(added.map(row))
+      .select('id, order_index');
+    fail('insert leçons', error);
+    for (const l of inserted!) idByOrder.set(l.order_index, l.id);
+  }
+
+  const lessonIdByOrder = idByOrder;
 
   const vocabRows = lessons.flatMap((l) =>
     (l.vocab_items ?? []).map((v) => ({
@@ -251,7 +302,7 @@ async function importPayload({ module, lessons }: ImportPayload) {
   }
 
   console.log(
-    `✓ ${module.id.padEnd(18)} ${lessons.length} leçons, ${vocabRows.length} vocab, ${quizRows.length} quiz`
+    `✓ ${module.id.padEnd(18)} ${lessons.length} leçons (${added.length} nouvelles, ${removed.length} retirées), ${vocabRows.length} vocab, ${quizRows.length} quiz`
   );
   return { lessons: lessons.length, vocab: vocabRows.length, quiz: quizRows.length };
 }

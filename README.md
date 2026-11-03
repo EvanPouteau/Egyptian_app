@@ -132,14 +132,14 @@ Dans Supabase → SQL Editor, exécuter dans l'ordre les fichiers de `supabase/m
 > utilisateur ne peut donc pas créer sa propre ligne. Le trigger s'en charge.
 >
 > Le `005` repère une leçon par `(module_id, lesson_order_index)` et non par son UUID :
-> `npm run import` régénère les UUID, une clé étrangère effacerait toute la progression à
-> chaque réimport.
+> c'est la seule clé qui survit à tout réimport, y compris quand une leçon est retirée ou
+> que deux leçons échangent leur rang.
 
 ### 3. Importer le contenu
 
 ```bash
 npm run normalize       # uniformise la translittération en Arabizi (ʿ → 3, ḥ → 7, ʾ → 2)
-npm run import          # charge data/*.json dans Supabase (rejouable)
+npm run import          # charge data/*.json dans Supabase (rejouable, `-- --dry-run` pour voir sans écrire)
 npm run generate:quiz   # génère la banque de quiz depuis le vocabulaire importé
 npm run generate:drills # génère data/exercises.generated.json (exercices d'entraînement)
 npm run generate:audio  # génère la prononciation des nouveaux mots (Azure, voir plus bas)
@@ -147,6 +147,11 @@ npm run review:audio    # outil de tri : écouter, valider ou réenregistrer cha
 ```
 
 Après tout ajout de contenu, relancer ces commandes dans cet ordre.
+
+- `import` met à jour les leçons sur place, appariées par leur rang dans le module : une
+  leçon garde son UUID, donc son adresse (`/modules/<module>/<uuid>`), d'un import à
+  l'autre. Seule une leçon dont le rang disparaît du JSON est supprimée. Le vocabulaire et
+  les questions, eux, sont remplacés en bloc ; d'où `generate:quiz` juste après.
 
 - `generate:quiz` ne remplace que les questions de type `mcq`. Les questions écrites à la
   main (compréhension du module 14) sont conservées. Ajouter `-- --dry-run` pour vérifier

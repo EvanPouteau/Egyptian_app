@@ -1255,6 +1255,9 @@ body {
   border-bottom: 1px solid var(--border);
   padding: 0.75rem 0.25rem;
   font-size: 0.9375rem;
+  /* Pas de `content-visibility: auto`, essayé pour alléger le rendu : il rogne la zone
+     cliquable des liens de source (paint containment, axe : 7 cibles sous 24 px) pour un
+     gain d'environ 10 % sur le temps de rendu. */
 }
 .glossaire-entree:hover {
   background: color-mix(in srgb, var(--gold) 6%, transparent);
@@ -1267,9 +1270,45 @@ body {
   line-height: 1.4;
 }
 
+/* Les styles des colonnes vivent ici plutôt qu'en classes Tailwind sur chaque ligne : 544
+   lignes répétaient les mêmes classes, deux fois (HTML et charge React). */
+.glossaire-translit {
+  font-weight: 600;
+}
+.glossaire-francais {
+  color: var(--muted);
+}
+
 .glossaire-sources {
   grid-column: 2;
   font-size: 0.8125rem;
+}
+.glossaire-sources a {
+  color: var(--muted);
+  transition: color 150ms;
+}
+.glossaire-sources a:hover {
+  color: var(--ink);
+}
+/* Séparateur entre deux sources, dessiné en CSS : un `<span aria-hidden>` par source
+   ajoutait des centaines d'éléments. `/ ""` le retire du nom du lien lu par les lecteurs
+   d'écran (dans un `@supports` : deux `content` de suite seraient fusionnés à la
+   minification, et Firefox, qui ignore cette syntaxe, n'afficherait plus rien).
+   `pointer-events: none` le laisse hors de la zone cliquable du lien. */
+.glossaire-sources a + a {
+  position: relative;
+  margin-inline-start: 0.75em;
+}
+.glossaire-sources a + a::before {
+  content: "·";
+  position: absolute;
+  inset-inline-start: -0.5em;
+  pointer-events: none;
+}
+@supports (content: "·" / "") {
+  .glossaire-sources a + a::before {
+    content: "·" / "";
+  }
 }
 
 /* Chaque source est un lien de 13 px de haut — visé au doigt, c'est trop peu, et le
@@ -1281,12 +1320,48 @@ body {
   padding-block: 0.375rem;
 }
 
-/* Bouton d'écoute (40 px) : la marge négative le laisse déborder sur le remplissage de la
+/* Bouton d'écoute, même allure que LetterAudioButton mais sans composant React (voir
+   GlossaireSons) : la cible fait 40 px, seul le cercle intérieur de 24 px se voit, et
+   l'icône vient du CSS. La marge négative le laisse déborder sur le remplissage de la
    ligne au lieu de l'agrandir. Sans elle, chaque mot sonore faisait 65 px de haut au lieu
-   de 51 (mesuré). Une classe plutôt que `-my-2.5` : la remise à zéro des marges des
-   boutons, hors couche, l'emporte sur les utilitaires Tailwind. */
-.glossaire-audio {
+   de 51 (mesuré). */
+.glossaire-son {
+  display: inline-flex;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
   margin-block: -0.625rem;
+  margin-inline-start: 0.125rem;
+  vertical-align: middle;
+}
+/* L'icône n'entre pas dans le nom lu par les lecteurs d'écran : l'`aria-label` du bouton
+   le remplace. */
+.glossaire-son::before {
+  content: "▶";
+  display: flex;
+  width: 1.5rem;
+  height: 1.5rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--gold);
+  border-radius: 999px;
+  color: var(--gold-text);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1;
+  transition: background-color 150ms;
+}
+.glossaire-son:hover::before {
+  background: color-mix(in srgb, var(--gold) 15%, transparent);
+}
+.glossaire-son:active::before {
+  background: color-mix(in srgb, var(--gold) 25%, transparent);
+}
+.glossaire-son[data-lecture]::before {
+  content: "❚❚";
+  background: color-mix(in srgb, var(--gold) 20%, transparent);
 }
 
 @media (min-width: 640px) {

@@ -93,19 +93,39 @@ export async function getModuleLessons(moduleId: string): Promise<LessonLink[]> 
 
 export type LessonWithVocab = Lesson & { vocab_items: VocabItem[] };
 
-/** Une leçon complète, avec son vocabulaire. */
-export const getLesson = cached(
-  'lesson:v1',
-  async (lessonId: string): Promise<LessonWithVocab | null> => {
-    const { data, error } = await db()
-      .from('lessons')
-      .select('*, vocab_items(*)')
-      .eq('id', lessonId)
-      .maybeSingle<LessonWithVocab>();
-    if (error) fail('leçon', error.message);
-    return data;
+/** Levée quand la leçon n'existe pas, pour que `unstable_cache` ne garde pas la réponse. */
+class LessonNotFound extends Error {}
+
+const readLesson = cached('lesson:v1', async (lessonId: string): Promise<LessonWithVocab> => {
+  const { data, error } = await db()
+    .from('lessons')
+    .select('*, vocab_items(*)')
+    .eq('id', lessonId)
+    .maybeSingle<LessonWithVocab>();
+  if (error) fail('leçon', error.message);
+  if (!data) throw new LessonNotFound();
+  return data;
+});
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Une leçon complète, avec son vocabulaire, ou `null` si elle n'existe pas.
+ *
+ * L'absence n'est pas mise en cache : un `null` gardé une heure faisait répondre 404 à
+ * une leçon pourtant présente en base (vu en local après un import). Une adresse qui n'a
+ * pas la forme d'un UUID est écartée avant la requête : Postgres la refuse avec une
+ * erreur, qui affichait la page d'erreur au lieu de « leçon introuvable ».
+ */
+export async function getLesson(lessonId: string): Promise<LessonWithVocab | null> {
+  if (!UUID.test(lessonId)) return null;
+  try {
+    return await readLesson(lessonId);
+  } catch (e) {
+    if (e instanceof LessonNotFound) return null;
+    throw e;
   }
-);
+}
 
 /** Les trois compteurs de l'accueil. */
 export const getContentCounts = cached('counts:v1', async () => {
