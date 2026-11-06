@@ -6,8 +6,8 @@
  * En carte, une ligne = une carte : les deux nombres se retrouvaient dans la même carte,
  * mélangés (signalé par l'éditeur sur la leçon des chiffres, module 6). On détecte ces
  * tableaux — un groupe de colonnes répété à l'identique — et on donne une carte à chaque
- * groupe. L'ordre est celui des lignes (0, 6, 1, 7…), le même que celui du tableau lu de
- * gauche à droite, ligne après ligne.
+ * groupe, dans l'ordre des séries : toute la colonne de gauche (0, 1, 2…), puis toute celle
+ * de droite (6, 7, 8…), comme on lit ces tableaux.
  */
 
 /** Longueur du groupe répété, ou `null` si les colonnes ne se répètent pas. */
@@ -24,16 +24,18 @@ const isBlank = (v: string) => !v || /^[—–-]$/.test(v.trim());
 
 /**
  * Les lignes à mettre en cartes : celles du tableau, ou, pour un tableau à colonnes
- * répétées, une ligne par groupe (un groupe entièrement vide est écarté, par exemple la
- * moitié droite d'une dernière ligne incomplète).
+ * répétées, une ligne par groupe, série de gauche d'abord (un groupe entièrement vide est
+ * écarté, par exemple la moitié droite d'une dernière ligne incomplète).
  */
 export function cardRows(headers: readonly string[], rows: readonly string[][]) {
   const size = repeatedGroup(headers);
   if (size === null) return { headers: [...headers], rows: rows.map((r) => [...r]) };
 
+  // Série de gauche en entier, puis série de droite : ces tableaux se lisent en colonnes
+  // (0 à 5 à gauche, 6 à 100 à droite), pas ligne après ligne.
   const out: string[][] = [];
-  for (const row of rows) {
-    for (let g = 0; g < 2; g++) {
+  for (let g = 0; g < 2; g++) {
+    for (const row of rows) {
       const group = row.slice(g * size, (g + 1) * size);
       if (group.every(isBlank)) continue;
       out.push(group);

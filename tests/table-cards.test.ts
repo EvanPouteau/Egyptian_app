@@ -15,18 +15,14 @@ describe('repeatedGroup', () => {
 describe('cardRows', () => {
   const headers = ['Chiffre', 'Romanisation', 'Chiffre', 'Romanisation'];
 
-  it('donne une carte par nombre, sans mélanger les deux séries', () => {
+  it('donne une carte par nombre, dans l’ordre des nombres : série de gauche, puis de droite', () => {
     const r = cardRows(headers, [
       ['0 — Sifr', 'Zéro', '6 — Setta', 'Six'],
       ['1 — Wa7ed', 'Un', '7 — Sab3a', 'Sept'],
     ]);
     expect(r.headers).toEqual(['Chiffre', 'Romanisation']);
-    expect(r.rows).toEqual([
-      ['0 — Sifr', 'Zéro'],
-      ['6 — Setta', 'Six'],
-      ['1 — Wa7ed', 'Un'],
-      ['7 — Sab3a', 'Sept'],
-    ]);
+    expect(r.rows.map((x) => x[0])).toEqual(['0 — Sifr', '1 — Wa7ed', '6 — Setta', '7 — Sab3a']);
+    expect(r.rows[0]).toEqual(['0 — Sifr', 'Zéro']);
   });
 
   it('écarte un groupe entièrement vide', () => {
