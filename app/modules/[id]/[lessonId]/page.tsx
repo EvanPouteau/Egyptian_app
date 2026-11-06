@@ -9,7 +9,7 @@ import { getReadLessons } from '@/lib/progress';
 import FeedbackActions from '@/components/FeedbackActions';
 import HashHighlight from '@/components/HashHighlight';
 import { SITE } from '@/lib/site-config';
-import { getLesson, getModule, getModuleLessons, getVocabLite } from '@/lib/content';
+import { getLesson, getModule, getModuleLessons, getQuizBank, getVocabLite } from '@/lib/content';
 import { describeLesson, openGraphFor } from '@/lib/meta';
 import JsonLd from '@/components/JsonLd';
 import { lessonData } from '@/lib/structured-data';
@@ -45,13 +45,16 @@ export default async function LessonPage({
 }) {
   const { id, lessonId } = await params;
 
-  const [lesson, siblings, user, allVocab, mod] = await Promise.all([
+  const [lesson, siblings, user, allVocab, mod, bank] = await Promise.all([
     getLesson(lessonId),
     getModuleLessons(id),
     getUser(),
     getVocabLite(),
     getModule(id),
+    getQuizBank(id),
   ]);
+  // Mêmes questions jouables que sur la page du quiz : pas de bouton vers un quiz vide.
+  const quizCount = bank.filter((q) => q.options?.choices?.length).length;
   const readLessons = await getReadLessons(user?.id ?? null, id);
 
   if (!lesson || lesson.module_id !== id) notFound();
@@ -144,6 +147,14 @@ export default async function LessonPage({
           >
             <span className="eyebrow">Suivant →</span>
             <span className="display mt-1 block text-sm leading-snug">{next.title}</span>
+          </Link>
+        )}
+        {/* Dernière leçon : la suite logique est le quiz du module, qu'on n'atteignait
+            qu'en revenant au chemin des leçons. Bouton principal (or), à la place de la
+            carte « Suivant ». */}
+        {!next && quizCount > 0 && (
+          <Link href={`/modules/${id}/quiz`} className="btn-sand sm:col-start-2 sm:justify-self-end">
+            Passer au quiz du module →
           </Link>
         )}
       </nav>
