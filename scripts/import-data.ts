@@ -26,6 +26,9 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
 
 // `--dry-run` : lit la base et annonce ce que l'import ferait de chaque leçon, sans écrire.
 const DRY_RUN = process.argv.includes('--dry-run');
+const ONLY = process.argv[process.argv.indexOf('--only') + 1] && process.argv.includes('--only')
+  ? process.argv[process.argv.indexOf('--only') + 1]
+  : null;
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 
@@ -307,7 +310,11 @@ async function main() {
     .filter(
       (f) => (f.startsWith('module-') && f.endsWith('.json')) || f === 'conjugations-core.json'
     )
+    // `--only module-06` : ne recharge que ce fichier (le vocabulaire et les questions du
+    // module sont remplacés, pas ceux des 29 autres).
+    .filter((f) => !ONLY || f === ONLY || f === `${ONLY}.json`)
     .sort();
+  if (files.length === 0) throw new Error(`Aucun fichier de contenu ne correspond à « ${ONLY} »`);
   const total = { modules: 0, lessons: 0, vocab: 0, quiz: 0 };
 
   for (const file of files) {
