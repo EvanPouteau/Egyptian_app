@@ -6,6 +6,7 @@ import LetterAudioButton from './LetterAudioButton';
 import ScrollTable from './ScrollTable';
 import { ALPHABET_AUDIO } from '@/lib/alphabet-audio';
 import { vocabAudioSrc } from '@/lib/vocab-audio';
+import { cardRows } from '@/lib/table-cards';
 import type { Lesson, VocabItem } from '@/lib/types';
 
 function extractText(node: ReactNode): string {
@@ -101,14 +102,17 @@ function tableData(node: HNode | undefined) {
 const isBlank = (v: string) => !v || /^[—–-]$/.test(v);
 
 function TableCards({
-  headers,
-  rows,
+  headers: allHeaders,
+  rows: allRows,
   cell,
 }: {
   headers: string[];
   rows: string[][];
   cell: (text: string) => ReactNode;
 }) {
+  // Un tableau à deux séries côte à côte (« Chiffre | Romanisation | Chiffre | … ») donne
+  // une carte par série et non une carte à deux nombres mélangés (lib/table-cards.ts).
+  const { headers, rows } = cardRows(allHeaders, allRows);
   return (
     <ul className="table-cards">
       {rows.map((row, i) => (
