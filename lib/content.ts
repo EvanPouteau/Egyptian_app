@@ -96,7 +96,9 @@ export type LessonWithVocab = Lesson & { vocab_items: VocabItem[] };
 /** Levée quand la leçon n'existe pas, pour que `unstable_cache` ne garde pas la réponse. */
 class LessonNotFound extends Error {}
 
-const readLesson = cached('lesson:v1', async (lessonId: string): Promise<LessonWithVocab> => {
+// Pour voir un contenu réimporté tout de suite en production, incrémenter la version de la
+// clé (`lesson:v2` → `v3`) et pousser : un redéploiement seul NE vide PAS ce cache (mesuré).
+const readLesson = cached('lesson:v2', async (lessonId: string): Promise<LessonWithVocab> => {
   const { data, error } = await db()
     .from('lessons')
     .select('*, vocab_items(*)')

@@ -205,7 +205,9 @@ ressource chargée depuis un autre domaine (police, script, API appelée par le 
 est bloquée tant qu'elle n'y est pas déclarée.
 
 Le contenu est mis en cache une heure côté serveur : un réimport peut mettre jusqu'à une
-heure à apparaître. Pour le voir tout de suite en production, redéployer.
+heure à apparaître. Pour le voir tout de suite en production, incrémenter la version de la
+clé de cache concernée dans `lib/content.ts` (par exemple `lesson:v2` → `lesson:v3`) et
+pousser : un simple redéploiement ne vide pas ce cache.
 
 ## Données
 
